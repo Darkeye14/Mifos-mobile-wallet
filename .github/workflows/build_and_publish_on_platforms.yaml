@@ -1,10 +1,14 @@
-# Workflow name indicating its purpose
+# This workflow file defines a comprehensive build and release pipeline for a
+# multi-platform application. It automates the process of building, testing, and deploying the
+# application to various platforms, including Android, iOS, Desktop (Windows, macOS, Linux), and Web.
 name: Multi-Platform App Build and Publish
 
 # Trigger configuration
+# This keyword specifies the events that trigger the workflow.
 on:
   # Manual trigger through GitHub Actions UI with configurable inputs
   workflow_dispatch:
+#  This section defines the configurable inputs for the workflow.
     inputs:
       # Release channel selection (internal/beta)
       release_type:
