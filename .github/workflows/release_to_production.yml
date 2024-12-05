@@ -1,11 +1,38 @@
-# GitHub Actions workflow for deploying the app to production environments
-# This workflow handles the promotion of beta releases to production on the Play Store
+# This workflow file defines a process for deploying an Android app to production environments, specifically focusing
+# on promoting beta releases to the production track on the Google Play Store.
+
+#Purpose:
+#The primary goal of this workflow is to automate the promotion of an Android app from beta to production on the Play Store.
+#It provides a controlled and automated way to release updates to end-users.
+
+#Functionality:
+ #Triggers:
+   #Manual Trigger: The workflow can be triggered manually using the workflow_dispatch event. This allows developers to initiate
+   #the production deployment process when they are ready. It includes an input parameter publish_to_play_store (default: false)
+   #to control whether the actual publishing to the Play Store should happen.
+ #Automatic Trigger: The workflow is also triggered automatically when a new GitHub release is created with the released type.
+   #This enables continuous delivery, where a new production release is automatically deployed whenever a new release is tagged on GitHub.
+
+ #Environment:
+  #SUPPLY_UPLOAD_MAX_RETRIES: 5: This environment variable sets the maximum number of retries for Play Store upload attempts,
+   #ensuring resilience in case of transient network issues.
+
+
+#In simpler terms:
+  #This workflow automates the process of releasing an Android app to production on the Google Play Store.
+  #It can be triggered manually or automatically when a new GitHub release is created. It uses Fastlane to handle the promotion process,
+  #ensuring that the app is signed, built, and uploaded to the Play Store correctly. The workflow also includes mechanisms for handling secrets securely and retrying uploads in case of errors.
+
+
+
 name: Production Deploy
 
 # Workflow triggers:
 # 1. Manual trigger with option to publish to Play Store
 # 2. Automatic trigger when a GitHub release is published
 on:
+  #This allows the workflow to be triggered manually from the GitHub Actions interface. It also defines an input called publish_to_play_store which is a boolean (true/false) and defaults to false.
+  #This input controls whether the workflow actually publishes to the Play Store or not.
   workflow_dispatch:
     inputs:
       publish_to_play_store:
@@ -13,38 +40,55 @@ on:
         default: false
         description: Publish to Play Store?
         type: boolean
+  #This triggers the workflow automatically when a new GitHub release is created with the released type.
+  #This is typically used for automated deployments when a new version is tagged.
   release:
     types: [ released ]
 
 # Environment variables
+#This section defines environment variables that are available to all jobs in the workflow.
 env:
-  # Maximum number of retries for Play Store upload attempts
+  # This sets an environment variable that controls the maximum number of times the workflow will
+  #attempt to upload the app to the Play Store before giving up.
   SUPPLY_UPLOAD_MAX_RETRIES: 5
 
 jobs:
   # Job to promote app from beta to production in Play Store
+  #This is the name of the job responsible for promoting the app to production.
   play_promote_production:
+    #This is the display name of the job.
     name: Play Publish Production
     # Only run if manually triggered with publish_to_play_store set to true
+    #This condition ensures that the job only runs if the workflow was triggered manually and the publish_to_play_store input was set to true.
+    #This provides a safety check to prevent accidental production deployments.
     if: ${{ inputs.publish_to_play_store == true }}
+    #This specifies that the job will run on a virtual machine with the latest macOS operating system.
+    #This is often preferred for Android deployments due to its compatibility with Fastlane and other tools.
     runs-on: macos-latest
     steps:
-      # Check out repository code
+      # This step uses the actions/checkout@v4 action to check out the repository's code onto the runner.
+        #This makes the project's source code available to the subsequent steps.
       - uses: actions/checkout@v4
 
-      # Set up Ruby environment for Fastlane
+      # This step uses the actions/checkout@v4 action to check out the repository's code onto the runner.
+      # This makes the project's source code available to the subsequent steps.
       - name: Configure Ruby
+        #This uses the ruby/setup-ruby action to install Ruby.
         uses: ruby/setup-ruby@a2bbe5b1b236842c1cb7dd11e8e3b51e0a616acc # v1.202.0
+        #This enables caching of Bundler dependencies to speed up subsequent runs.
         with:
           bundler-cache: true
 
-      # Install Bundler and required dependencies
+      # Install specific version of Bundler and required dependencies
       - name: Install Bundler
+        #This installs the project dependencies specified in the Gemfile, using 4 parallel jobs and retrying up to 3 times if there are errors.
         run: |
           gem install bundler:2.2.27
           bundle install --jobs 4 --retry 3
 
       # Set up necessary secrets for signing and deployment
+      # to securely retrieve and decrypt sensitive information like keystore, Google Services, Play Store credentials, and Firebase credentials from GitHub secrets.
+      # These secrets are essential for signing and deploying the app.
       - uses: ./.github/actions/inflate-secrets
         name: Inflate Secrets
         with:
@@ -54,6 +98,8 @@ jobs:
           firebase-creds: ${{ secrets.FIREBASECREDS }}           # Firebase deployment credentials
 
       # Use Fastlane to promote the beta version to production
+      # This step executes the promote_to_production lane defined in your Fastfile. This lane is responsible for promoting the beta release
+      # to production on the Play Store using the provided credentials and configurations. This is the core step of the deployment process.
       - name: Promote Beta to Production Play Store
         run: |
           bundle exec fastlane promote_to_production

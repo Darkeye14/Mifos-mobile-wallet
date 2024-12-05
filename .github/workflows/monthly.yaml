@@ -1,10 +1,31 @@
 # Workflow to automatically create monthly version tags
 # This workflow runs on the first day of each month at 3:30 AM UTC
 # It can also be triggered manually via workflow_dispatch
+
+#Purpose:
+ #This workflow file defines an automated process that runs on the first day of each month to create a new version tag based on the current year and month.
+ #This helps track monthly releases in a calendar-based versioning scheme.
+
+#Functionality:
+# Scheduling: The workflow is scheduled to run on the first day of every month at 3:30 AM UTC using the schedule and cron syntax.
+# Manual Trigger: It can also be triggered manually using the workflow_dispatch event.
+# Jobs: The workflow defines a single job named "tag" that runs on an Ubuntu virtual machine.
+
+#In simpler terms:
+  #This workflow automates the process of creating a monthly version tag for your project. It runs on the first day of each month
+  #and creates a tag based on the current year and month. This helps you track your releases in a calendar-based versioning scheme,
+  #making it easier to manage and identify specific releases.
+
+#Example:
+ #If the workflow runs on January 1st, 2024, it will create a tag named 2024.01.0. If it runs on February 1st, 2024, it will create a tag named 2024.02.0,
+ #and so on. This provides a clear and organized way to track your monthly releases.
+
+
+#This line defines the name of the workflow as "Bump our Calendar Version." This name will be displayed in the GitHub Actions interface.
 name: Bump our Calendar Version
 
 on:
-  # Allow manual triggering of the workflow
+  # Allow manual triggering of the workflow from the GitHub Actions interface.
   workflow_dispatch:
   # Schedule the workflow to run monthly
   schedule:
@@ -17,15 +38,19 @@ jobs:
     # Job to create a new version tag based on the current year and month
     # This helps track monthly releases in a calendar-based versioning scheme
     name: Tag Monthly Release
+    #This specifies that the job will run on a virtual machine with the latest Ubuntu operating system.
     runs-on: ubuntu-latest
     steps:
       # Step 1: Checkout the repository
       # This is required to perform any operations on the repository
+     #action to check out the repository's code onto the runner. This makes the project's source code available to the subsequent steps.
       - uses: actions/checkout@v4
 
       # Step 2: Get current timestamp
       # This action provides formatted date/time outputs that we can use
       # for creating our version tag
+      #This step uses the josStorer/get-current-time@v2.1.2 action to get the current time and store it in an output variable named current-time.
+      #This output variable will be used in the next step to create the version tag.
       - name: Get Current Time
         uses: josStorer/get-current-time@v2.1.2
         id: current-time # This ID is used to reference the outputs in later steps
@@ -40,3 +65,6 @@ jobs:
           # Format: YYYY.MM.0 (year.month.patch)
           # The .0 suffix indicates this is the initial release for this month
           tag: ${{ steps.current-time.outputs.year }}.${{ steps.current-time.outputs.month }}.0
+
+          #This line specifies the format of the tag, using the year and month from the current-time output variable and appending .0
+          #for the patch version. This creates a tag in the format YYYY.MM.0 (e.g., 2024.01.0 for January 2024).
