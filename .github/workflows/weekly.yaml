@@ -4,33 +4,33 @@
 # This workflow file defines an automated process that runs weekly to create version tags and
 # trigger beta releases for your project.
 
-#Purpose:
-  #Version Tagging: It automatically creates and pushes a new version tag using a tool called "Reckon."
-  #This tag likely represents a snapshot of your project at a specific point in time, making it easier to track and manage releases.
+# Purpose:
+# Version Tagging: It automatically creates and pushes a new version tag using a tool called "Reckon."
+# This tag likely represents a snapshot of your project at a specific point in time, making it easier to track and manage releases.
 
-  #Beta Release Trigger: After tagging, it triggers another workflow named "build_and_publish_on_ platforms. yaml."
-  #This workflow is responsible for building and deploying your application to various platforms for beta testing.
+# Beta Release Trigger: After tagging, it triggers another workflow named "build_and_publish_on_ platforms. yaml."
+# This workflow is responsible for building and deploying your application to various platforms for beta testing.
 
-#Functionality:
-  #Scheduling: The workflow is scheduled to run every other Sunday at 4:00 AM UTC using the schedule and cron syntax.
-  #Manual Trigger: It can also be triggered manually using the workflow_dispatch event.
-  #Jobs: The workflow defines a single job named "tag" that runs on an Ubuntu virtual machine.
+# Functionality:
+# Scheduling: The workflow is scheduled to run every other Sunday at 4:00 AM UTC using the schedule and cron syntax.
+# Manual Trigger: It can also be triggered manually using the workflow_dispatch event.
+# Jobs: The workflow defines a single job named "tag" that runs on an Ubuntu virtual machine.
 
-#Steps:
-  #The job consists of several steps:
-  #Checking out the repository with full history.
-  #Setting up the Java environment.
-  #Creating and pushing the version tag using Reckon.
-  #Triggering the build and publish workflow for beta release.
+# Steps:
+# The job consists of several steps:
+# Checking out the repository with full history.
+# Setting up the Java environment.
+# Creating and pushing the version tag using Reckon.
+# Triggering the build and publish workflow for beta release.
 
-#In simpler terms:
-  #This workflow automates the process of creating a weekly snapshot of your project, tagging it with a version number,
-  #and then initiating the process of building and deploying a beta release of your application. This helps streamline your release cycle
-  #and ensures regular updates are available for testing.
+# In simpler terms:
+# This workflow automates the process of creating a weekly snapshot of your project, tagging it with a version number,
+# and then initiating the process of building and deploying a beta release of your application. This helps streamline your release cycle
+# and ensures regular updates are available for testing.
 
 
-#name: This line defines the name of the workflow as "Tag Weekly Release."
-#This name will be displayed in the GitHub Actions interface.
+# name: This line defines the name of the workflow as "Tag Weekly Release."
+# This name will be displayed in the GitHub Actions interface.
 name: Tag Weekly Release
 
 on:
@@ -42,22 +42,25 @@ on:
     # Cron syntax: minute hour day-of-month month day-of-week
     - cron: '0 4 */2 * 0'
 
-jobs:  #: This section defines the jobs that will be executed in the workflow.
-  tag: #: This section defines the jobs that will be executed in the workflow.
+#: jobs-> This section defines the jobs that will be executed in the workflow.
+#: tag-> This section defines the jobs that will be executed in the workflow.
+jobs:
+  tag:
     name: Tag Weekly Release
-    #This specifies that the job will run on a virtual machine with the latest Ubuntu operating system.
+    # This specifies that the job will run on a virtual machine with the latest Ubuntu operating system.
     runs-on: ubuntu-latest
     steps:
       # Checkout the repository with full history for proper versioning
       - uses: actions/checkout@v4
-        #This option ensures that the entire history of the repository is fetched, which is important for accurate versioning.
+        # This option ensures that the entire history of the repository is fetched, which is important for accurate versioning.
         with:
           fetch-depth: 0
 
       # Setup Java environment for Gradle operations
-      - name: Set up JDK 17  #This uses the actions/setup-java action to install Java.
+      # This uses the actions/setup-java action to install Java.
+      - name: Set up JDK 17
         uses: actions/setup-java@v4.2.2
-        #This specifies the distribution of Java to use (Temurin).
+        # This specifies the distribution of Java to use (Temurin).
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -65,8 +68,8 @@ jobs:  #: This section defines the jobs that will be executed in the workflow.
       # Create and push a new version tag using Reckon tool
       # This uses the 'final' stage for production-ready releases
       - name: Tag Weekly Release
-        #This provides the necessary GitHub token for authentication.
-        #This executes the Gradle command to tag the release using Reckon, specifying the 'final' stage.
+        # This provides the necessary GitHub token for authentication.
+        # This executes the Gradle command to tag the release using Reckon, specifying the 'final' stage.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew :reckonTagPush -Preckon.stage=final
@@ -74,10 +77,11 @@ jobs:  #: This section defines the jobs that will be executed in the workflow.
       # Trigger the build and publish workflow for beta release
       # This starts the process of building and deploying the app to various platforms
       - name: Trigger Workflow
-        #This uses the actions/github-script action to execute a JavaScript script.
+        # This uses the actions/github-script action to execute a JavaScript script.
         uses: actions/github-script@v7
-        #This contains the JavaScript code that triggers the other workflow using the GitHub API.
+        # This contains the JavaScript code that triggers the other workflow using the GitHub API.
         with:
+          # It specifies the owner, repository, workflow ID, branch (dev), and inputs for the triggered workflow. In this case, it indicates a "beta" release type.
           script: |
             github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
@@ -88,4 +92,3 @@ jobs:  #: This section defines the jobs that will be executed in the workflow.
                 "release_type": "beta",
               },
             })
-   #It specifies the owner, repository, workflow ID, branch (dev), and inputs for the triggered workflow. In this case, it indicates a "beta" release type.

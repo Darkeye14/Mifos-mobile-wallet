@@ -1,107 +1,120 @@
 # GitHub Actions workflow for continuous integration of Mobile-Wallet project
 # Runs on master and dev branches to ensure code quality and build stability
 
-#Purpose:
- #This workflow file defines a comprehensive continuous integration (CI) process for the Mobile-Wallet project.
- #It aims to ensure code quality and build stability by automatically running various checks and builds whenever code is pushed to the dev branch or a pull request is created.
+# Purpose:
+# This workflow file defines a comprehensive continuous integration (CI) process for the Mobile-Wallet project.
+# It aims to ensure code quality and build stability by automatically running various checks and builds whenever code is pushed to the dev branch or a pull request is created.
 
-#Functionality:
-#Triggers:
-#Push: The workflow is triggered on pushes to the dev branch.
-#Pull Request: It is also triggered on all pull requests, regardless of the target branch.
-#Concurrency:
- #The concurrency setting prevents multiple workflow runs from happening simultaneously for the same branch or pull request. This helps avoid conflicts and resource contention.
-  #If a new workflow run is triggered while a previous one is still in progress, the previous run is canceled.
+# Functionality:
+# Triggers:
+# Push: The workflow is triggered on pushes to the dev branch.
+# Pull Request: It is also triggered on all pull requests, regardless of the target branch.
+# Concurrency:
+# The concurrency setting prevents multiple workflow runs from happening simultaneously for the same branch or pull request. This helps avoid conflicts and resource contention.
+# If a new workflow run is triggered while a previous one is still in progress, the previous run is canceled.
 
-#In simpler terms:
- #This workflow automates the process of building and testing the Mobile-Wallet project whenever code changes are pushed or a pull request is created.
- #It performs various checks to ensure code quality, manages dependencies, and builds the application for both Android and desktop platforms.
- #The workflow is designed to be efficient by using caching and concurrency to optimize build times and resource usage.
+# In simpler terms:
+# This workflow automates the process of building and testing the Mobile-Wallet project whenever code changes are pushed or a pull request is created.
+# It performs various checks to ensure code quality, manages dependencies, and builds the application for both Android and desktop platforms.
+# The workflow is designed to be efficient by using caching and concurrency to optimize build times and resource usage.
 
-#Workflow flow:
- #The workflow is triggered by a push to the dev branch or a pull request.
- #The setup job prepares the environment.
- #The checks and dependency_guard jobs run in parallel to perform code quality checks and dependency verification.
- #If the checks and dependency_guard jobs are successful, the build and build_desktop_app jobs run to build the Android and desktop applications, respectively.
- #The built artifacts are uploaded for further use or deployment.
+# Workflow flow:
+# The workflow is triggered by a push to the dev branch or a pull request.
+# The setup job prepares the environment.
+# The checks and dependency_guard jobs run in parallel to perform code quality checks and dependency verification.
+# If the checks and dependency_guard jobs are successful, the build and build_desktop_app jobs run to build the Android and desktop applications, respectively.
+# The built artifacts are uploaded for further use or deployment.
 
 name: Mobile-Wallet CI[Master/Dev]
 
 # Trigger conditions for the workflow
-#This name will be displayed in the GitHub Actions interface.
+# This name will be displayed in the GitHub Actions interface.
+# {push} This triggers the workflow when code is pushed to the repository.
+# branches-> This further specifies that the workflow should only be triggered when code is pushed to the dev branch.
+# Runs on pushes to dev branch
+# PullRequest-> This triggers the workflow when a pull request is created or updated.
+# Runs on all pull requests
 on:
-  #This triggers the workflow when code is pushed to the repository.
   push:
-    #This further specifies that the workflow should only be triggered when code is pushed to the dev branch.
-    branches: [ dev ]  # Runs on pushes to dev branch
-    #This triggers the workflow when a pull request is created or updated.
-  pull_request:       # Runs on all pull requests
+    branches: [ dev ]
+  pull_request:
 
 # Concurrency settings to prevent multiple simultaneous workflow runs
+# group-> This creates a concurrency group based on the branch or tag that triggered the workflow.
+# This means that only one workflow run can be active at a time for a given branch or tag.
+# cancel-> This specifies that if a new workflow run is triggered for the same concurrency group while a
+# previous run is still in progress, the previous run will be canceled.
+# Cancels previous runs if a new one is triggered
 concurrency:
-  #This creates a concurrency group based on the branch or tag that triggered the workflow.
-  #This means that only one workflow run can be active at a time for a given branch or tag.
   group: build-${{ github.ref }}
-  # This specifies that if a new workflow run is triggered for the same concurrency group while a
-  # previous run is still in progress, the previous run will be canceled.
-  cancel-in-progress: true  # Cancels previous runs if a new one is triggered
+  cancel-in-progress: true
 
+# Setup-> Initial setup job to prepare the environment
+# This is the name of the first job, which is responsible for setting up the environment.
+# runsOn-> This specifies that the job will run on a virtual machine with the latest Ubuntu operating system.
+# Steps-> This section defines the individual steps that will be executed within the job.
+# uses-> Checkout repository code
+# Setup Java environment
+# distribution-> This specifies that the Zulu distribution of Java should be used.
+# This specifies that Java 17 should be installed.
+# action to set up Gradle, the build tool used for the project.
+# name-> Cache Gradle dependencies and build outputs to speed up future builds
+# with-> This section provides configuration options for the action.
+# path-> This specifies the paths to be cached. In this case, it includes the Gradle caches, the Gradle wrapper, and the build directory.
+# key-> This is a unique identifier for the cache. It is generated based on the operating system, the word "gradle", and a hash of the Gradle files.
+# RestoreKey-> This provides fallback keys to use if the primary key does not match an existing cache. In this case,
+# it falls back to a key based only on the operating system and the word "gradle".
 jobs:
-  # Initial setup job to prepare the environment
-  #This is the name of the first job, which is responsible for setting up the environment.
   setup:
-    #This specifies that the job will run on a virtual machine with the latest Ubuntu operating system.
     runs-on: ubuntu-latest
-    #This section defines the individual steps that will be executed within the job.
     steps:
-      - uses: actions/checkout@v4  # Checkout repository code
-      - uses: actions/setup-java@v4  # Setup Java environment
-        with:
-          distribution: 'zulu' #This specifies that the Zulu distribution of Java should be used.
-          java-version: 17 #This specifies that Java 17 should be installed.
-      - uses: gradle/actions/setup-gradle@v4  # action to set up Gradle, the build tool used for the project.
-
-      # Cache Gradle dependencies and build outputs to speed up future builds
-      - name: Cache Gradle and build outputs
-        uses: actions/cache@v4
-        #This section provides configuration options for the action.
-        with:
-          #This specifies the paths to be cached. In this case, it includes the Gradle caches, the Gradle wrapper, and the build directory.
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            build
-          # This is a unique identifier for the cache. It is generated based on the operating system, the word "gradle", and a hash of the Gradle files.
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          #This provides fallback keys to use if the primary key does not match an existing cache. In this case,
-          #it falls back to a key based only on the operating system and the word "gradle".
-          restore-keys: ${{ runner.os }}-gradle-
-
-  # Code quality checks job
-  checks: # This is the name of the job responsible for running code quality checks.
-    needs: setup  # Depends on setup job completion
-    runs-on: ubuntu-latest
-    strategy: #This section defines the strategy for running the job.
-      #This defines a matrix strategy, which allows you to run the job multiple times with different configurations.
-      matrix:
-        # Define different types of checks to run in parallel
-        #This defines the values for the check variable in the matrix. The job will run three times, once for each value in the list,
-        #effectively running three different types of checks in parallel.
-        check: [ build_logic, spotless, detekt ]
-    steps: #This section defines the individual steps that will be executed within the job.
-     #These steps are similar to the ones in the setup job. They check out the code and set up the Java environment.
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: 17
-      
-      # Run different checks based on matrix value
-      #This step runs the actual code quality checks based on the value of the matrix.check variable.
-      #This sets the display name of the step to indicate which check is being run.
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Cache Gradle and build outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            build
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+  # Code quality checks job
+  # This is the name of the job responsible for running code quality checks.
+  # needs-> Depends on setup job completion
+  # strategy->This section defines the strategy for running the job.
+  # This defines a matrix strategy, which allows you to run the job multiple times with different configurations.
+  # check-> Define different types of checks to run in parallel
+  # This defines the values for the check variable in the matrix. The job will run three times, once for each value in the list,
+  # effectively running three different types of checks in parallel.
+  # steps-> This section defines the individual steps that will be executed within the job.
+  # uses-> These steps are similar to the ones in the setup job. They check out the code and set up the Java environment.
+  # name: Run ${{ matrix.check }}-> Run different checks based on matrix value
+  # This step runs the actual code quality checks based on the value of the matrix.check variable.
+  # This sets the display name of the step to indicate which check is being run.
+  # id-> This assigns an ID to the step, which can be used to reference its outcome in later steps.
+  # run->This section contains the commands to execute. It uses conditional logic to determine which Gradle command to run based on the type of check.
+  checks:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        check: [ build_logic, spotless, detekt ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: 17
+
       - name: Run ${{ matrix.check }}
-        id: run_check #This assigns an ID to the step, which can be used to reference its outcome in later steps.
-        #This section contains the commands to execute. It uses conditional logic to determine which Gradle command to run based on the type of check.
+        id: run_check
         run: |
           if [ "${{ matrix.check }}" = "build_logic" ]; then
             ./gradlew check -p build-logic  # Check build logic
@@ -112,26 +125,27 @@ jobs:
           fi
 
       # Upload detekt analysis reports as artifacts
+      # if-> This condition ensures that the step only runs if the matrix.check is 'detekt' and the run_check step (which ran Detekt) had a successful outcome.
+      # uses-> This uses the actions/upload-artifact action to upload the reports.
+      # with-> This section provides configuration options for the action.
+      # name-> This sets the name of the artifact.
+      # path-> This specifies the path to the reports to be uploaded.
       - name: Upload Detekt Reports
-        #This condition ensures that the step only runs if the matrix.check is 'detekt' and the run_check step (which ran Detekt) had a successful outcome.
         if: ${{ matrix.check == 'detekt' && steps.run_check.outcome == 'success' }}
-        #This uses the actions/upload-artifact action to upload the reports.
         uses: actions/upload-artifact@v4
-        with: #This section provides configuration options for the action.
-          #This sets the name of the artifact.
+        with:
           name: detekt-reports
-          #This specifies the path to the reports to be uploaded.
           path: |
             **/build/reports/detekt/detekt.md
 
   # Dependency verification and management job
-  #This is the name of the job responsible for dependency verification and management.
+  # This is the name of the job responsible for dependency verification and management.
+  # needs-> This specifies that the dependency_guard job depends on the successful completion of the setup job.
+  # runsOn-> This specifies that the job will run on a virtual machine with the latest Ubuntu operating system.
+  # steps-> These steps are similar to the ones in the setup job. They check out the code and set up the Java environment.
   dependency_guard:
-    # This specifies that the dependency_guard job depends on the successful completion of the setup job.
     needs: setup
-    #This specifies that the job will run on a virtual machine with the latest Ubuntu operating system.
     runs-on: ubuntu-latest
-    #These steps are similar to the ones in the setup job. They check out the code and set up the Java environment.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -140,39 +154,39 @@ jobs:
           java-version: 17
 
       # Verify dependencies against baseline
+      # id-> This assigns an ID to the step, which can be used to reference its outcome in later steps.
+      # continue-> This allows the workflow to continue even if this step fails. This is important because the next steps might try to fix the dependency issues.
+      # run-> This executes the Gradle task for Dependency Guard.
       - name: Check Dependency Guard
-        #This assigns an ID to the step, which can be used to reference its outcome in later steps.
         id: dependencyguard_verify
-        #This allows the workflow to continue even if this step fails. This is important because the next steps might try to fix the dependency issues.
         continue-on-error: true
-        #This executes the Gradle task for Dependency Guard.
         run: ./gradlew :mifospay-android:dependencyGuard
 
       # Prevent baseline updates on fork PRs
       - name: Prevent updating Dependency Guard baselines if this is a fork
         id: checkfork_dependencyguard
-        #This condition checks if the dependencyguard_verify step failed and if the current pull request is from a forked repository.
+        # This condition checks if the dependencyguard_verify step failed and if the current pull request is from a forked repository.
         if: steps.dependencyguard_verify.outcome == 'failure' && github.event.pull_request.head.repo.full_name != github.repository
-        #If both conditions are true, it prints an error message and exits with a failure code, preventing the workflow from proceeding.
+        # If both conditions are true, it prints an error message and exits with a failure code, preventing the workflow from proceeding.
         run: |
           echo "::error::Dependency Guard failed, please update baselines with: ./gradlew dependencyGuardBaseline" && exit 1
 
       # Generate new dependency baselines if verification fails
       - name: Generate new Dependency Guard baselines if verification failed and it's a PR
         id: dependencyguard_baseline
-        #This condition checks if the dependencyguard_verify step failed and if the current event is a pull request.
+        # This condition checks if the dependencyguard_verify step failed and if the current event is a pull request.
         if: steps.dependencyguard_verify.outcome == 'failure' && github.event_name == 'pull_request'
-        #If both conditions are true, it executes the Gradle task to generate new baselines.
+        # If both conditions are true, it executes the Gradle task to generate new baselines.
         run: |
           ./gradlew :mifospay-android:dependencyGuardBaseline
 
       # Automatically commit new baselines if generated
       - name: Push new Dependency Guard baselines if available
-        #This uses a third-party action to automate the commit process.
+        # This uses a third-party action to automate the commit process.
         uses: stefanzweifel/git-auto-commit-action@v5
-        #This condition checks if the dependencyguard_baseline step was successful, meaning new baselines were generated.
+        # This condition checks if the dependencyguard_baseline step was successful, meaning new baselines were generated.
         if: steps.dependencyguard_baseline.outcome == 'success'
-        #This section provides configuration options for the action, such as the file pattern to commit, commit message, etc.
+        # This section provides configuration options for the action, such as the file pattern to commit, commit message, etc.
         with:
           file_pattern: '**/dependencies/*.txt'
           disable_globbing: true
@@ -180,12 +194,12 @@ jobs:
 
   # Android app build job
   build: #This is the name of the job responsible for building the Android application.
-    #This specifies that the build job depends on the successful completion of both the checks and dependency_guard jobs.
-    #This ensures that code quality checks and dependency verification are passed before the build process starts.
+    # This specifies that the build job depends on the successful completion of both the checks and dependency_guard jobs.
+    # This ensures that code quality checks and dependency verification are passed before the build process starts.
     needs: [ checks, dependency_guard ]  # Requires successful checks and dependency verification
-    #This specifies that the job will run on a virtual machine with the latest Ubuntu operating system.
+    # This specifies that the job will run on a virtual machine with the latest Ubuntu operating system.
     runs-on: ubuntu-latest
-    #These steps are similar to the ones in previous jobs. They check out the code and set up the Java environment.
+    # These steps are similar to the ones in previous jobs. They check out the code and set up the Java environment.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -195,40 +209,41 @@ jobs:
 
       # Build debug APK for demo flavor
       - name: Build APKs
-        #This executes the Gradle command to build the debug APK for the "demo" flavor of the app.
+        # This executes the Gradle command to build the debug APK for the "demo" flavor of the app.
         run: ./gradlew :mifospay-android:assembleDemoDebug
 
       # Upload built APKs as artifacts
       - name: Upload APKs
-        #This uses the actions/upload-artifact action to upload the APKs.
+        # This uses the actions/upload-artifact action to upload the APKs.
         uses: actions/upload-artifact@v4
         with:
           # This sets the name of the artifact.
           name: Android APKs
-          #This specifies the path to the APK files to be uploaded.
+          # This specifies the path to the APK files to be uploaded.
           path: '**/build/outputs/apk/**/*.apk'
 
   # Desktop application build job for multiple platforms
   build_desktop_app:
-    #This specifies that the build_desktop_app job depends on the successful completion of both the checks and dependency_guard jobs.
+    # This specifies that the build_desktop_app job depends on the successful completion of both the checks and dependency_guard jobs.
     needs: [ checks, dependency_guard ]
-    #This section defines the strategy for running the job.
+    # This section defines the strategy for running the job.
     strategy:
-      matrix: #This defines a matrix strategy to build the desktop app for different operating systems.
+      # This defines a matrix strategy to build the desktop app for different operating systems.
+      matrix:
         # Build for Windows, Linux, and MacOS
-        #This specifies the operating systems to build for: Windows, Ubuntu, and macOS.
+        # This specifies the operating systems to build for: Windows, Ubuntu, and macOS.
         os:
           - windows-latest
           - ubuntu-latest
           - macos-latest
 
-#This specifies that the job will run on a virtual machine with the operating system defined in the matrix.
+    # This specifies that the job will run on a virtual machine with the operating system defined in the matrix.
     runs-on: ${{ matrix.os }}
     permissions:
       # This grants the job write access to the repository's contents, which is necessary for uploading artifacts.
       contents: write
     steps:
-      #These steps are similar to the ones in previous jobs. They check out the code and set up the Java environment.
+      # These steps are similar to the ones in previous jobs. They check out the code and set up the Java environment.
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
@@ -243,9 +258,9 @@ jobs:
       # Upload Windows executables and installers
       - name: Upload Windows Apps
         if: matrix.os == 'windows-latest'
-        #This uses the actions/upload-artifact action to upload the artifacts.
+        # This uses the actions/upload-artifact action to upload the artifacts.
         uses: actions/upload-artifact@v4
-        #This section provides configuration options for the action, including the artifact name and path.
+        # This section provides configuration options for the action, including the artifact name and path.
         with:
           name: Windows-Apps
           path: |
@@ -255,6 +270,9 @@ jobs:
       # Upload Linux package
       - name: Upload Linux App
         if: matrix.os == 'ubuntu-latest'
+        # This line specifies that the step will use a pre-built action from the GitHub Marketplace called actions/upload-artifact.
+        # @v4 indicates the version of the action being used.
+        # This action is designed to upload build artifacts, such as compiled applications, test results, or other files, to make them available after the workflow run completes.
         uses: actions/upload-artifact@v4
         with:
           name: Linux-App
@@ -266,4 +284,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MacOS-App
+          # This line specifies the path to the files or directories that should be included in the artifact.
+          # it is a relative path within the repository that likely points to the location where the built MacOS application package (in DMG format) is stored.
+          # The *.dmg pattern indicates that all files with the .dmg extension in that directory will be included in the artifact.
           path: './mifospay-desktop/build/compose/binaries/main/dmg/*.dmg'
